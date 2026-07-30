@@ -1,6 +1,7 @@
 using AsmResolver.DotNet;
 using AsmResolver.DotNet.Code.Cil;
 using AsmResolver.PE.DotNet.Cil;
+using AsmResolver.PE.DotNet.Metadata.Tables;
 
 namespace MelonFuscator.Engine.Protections;
 
@@ -24,6 +25,15 @@ public sealed class FlattenProtection : IProtection
 
     public void Execute(ObfuscationContext ctx)
     {
+        // A single module-wide opaque field (value 0). Every state assignment is XORed with
+        // it: at runtime it is 0 so the state is unchanged, but a decompiler cannot prove that,
+        // so it cannot fold the state values and cannot reconstruct the switch into readable
+        // code - it degrades to goto-soup.
+        var holder = CilHelpers.CreateStaticHolder(ctx.Module, ctx.Names.Next());
+        var opaque = new FieldDefinition(ctx.Names.Next(),
+            FieldAttributes.Public | FieldAttributes.Static, ctx.Module.CorLibTypeFactory.Int32);
+        holder.Fields.Add(opaque);
+
         int flattened = 0, skipped = 0, ehSkip = 0;
         foreach (var type in ctx.Module.GetAllTypes())
         {
@@ -32,14 +42,14 @@ public sealed class FlattenProtection : IProtection
                 var body = method.CilMethodBody;
                 if (body == null) continue;
                 if (body.ExceptionHandlers.Count != 0) ehSkip++;
-                if (TryFlatten(ctx, body)) flattened++;
+                if (TryFlatten(ctx, body, opaque)) flattened++;
                 else skipped++;
             }
         }
         ctx.Log.Step($"flattened {flattened} method(s), left {skipped} untouched ({ehSkip} have try/catch)");
     }
 
-    private static bool TryFlatten(ObfuscationContext ctx, CilMethodBody body)
+    private static bool TryFlatten(ObfuscationContext ctx, CilMethodBody body, FieldDefinition opaque)
     {
         if (body.ExceptionHandlers.Count != 0) return false;
 
@@ -139,8 +149,7 @@ public sealed class FlattenProtection : IProtection
 
         var output = new List<CilInstruction>();
         // prologue: state = stateForBlock[0]; goto dispatch;
-        output.Add(new CilInstruction(CilOpCodes.Ldc_I4, stateForBlock[0]));
-        output.Add(new CilInstruction(CilOpCodes.Stloc, stateLocal));
+        EmitSetState(output, stateLocal, stateForBlock[0], opaque);
         output.Add(new CilInstruction(CilOpCodes.Br, new CilInstructionLabel(dispatchLoad)));
         // dispatcher
         output.Add(dispatchLoad);
@@ -169,29 +178,26 @@ public sealed class FlattenProtection : IProtection
             {
                 for (int i = start; i < end - 1; i++) output.Add(instrs[i]);  // drop the br
                 int tgt = leaderToBlock[FindByOffset(instrs, ((ICilLabel)last.Operand!).Offset)];
-                EmitGoto(output, stateLocal, stateForBlock[tgt], dispatchLabel);
+                EmitGoto(output, stateLocal, stateForBlock[tgt], opaque, dispatchLabel);
             }
             else if (fc == CilFlowControl.ConditionalBranch)
             {
                 for (int i = start; i < end; i++) output.Add(instrs[i]);      // keep body + cond branch
                 int tgtBlock = leaderToBlock[FindByOffset(instrs, ((ICilLabel)last.Operand!).Offset)];
                 int fallBlock = leaderToBlock[end];                            // next leader
-                // taken path stub
-                var takenStub = new CilInstruction(CilOpCodes.Ldc_I4, stateForBlock[tgtBlock]);
-                last.Operand = new CilInstructionLabel(takenStub);            // retarget cond branch
                 // fall-through: state = fall; goto dispatch
-                EmitGoto(output, stateLocal, stateForBlock[fallBlock], dispatchLabel);
-                // taken: state = tgt; goto dispatch
-                output.Add(takenStub);
-                output.Add(new CilInstruction(CilOpCodes.Stloc, stateLocal));
+                EmitGoto(output, stateLocal, stateForBlock[fallBlock], opaque, dispatchLabel);
+                // taken path: state = tgt; goto dispatch (its first instruction is the branch target)
+                var takenFirst = EmitSetState(output, stateLocal, stateForBlock[tgtBlock], opaque);
                 output.Add(new CilInstruction(CilOpCodes.Br, dispatchLabel));
+                last.Operand = new CilInstructionLabel(takenFirst);           // retarget cond branch
             }
             else
             {
                 // Falls through to the next block.
                 if (b + 1 >= k) return false;
                 for (int i = start; i < end; i++) output.Add(instrs[i]);
-                EmitGoto(output, stateLocal, stateForBlock[b + 1], dispatchLabel);
+                EmitGoto(output, stateLocal, stateForBlock[b + 1], opaque, dispatchLabel);
             }
 
             blockStartLabels[b] = new CilInstructionLabel(output[outStart]);
@@ -209,10 +215,20 @@ public sealed class FlattenProtection : IProtection
         return true;
     }
 
-    private static void EmitGoto(List<CilInstruction> output, CilLocalVariable state, int value, ICilLabel dispatch)
+    // Emits: state = value ^ opaque;  and returns the first instruction (the ldc, a valid label target).
+    private static CilInstruction EmitSetState(List<CilInstruction> output, CilLocalVariable state, int value, FieldDefinition opaque)
     {
-        output.Add(new CilInstruction(CilOpCodes.Ldc_I4, value));
+        var first = new CilInstruction(CilOpCodes.Ldc_I4, value);
+        output.Add(first);
+        output.Add(new CilInstruction(CilOpCodes.Ldsfld, opaque));
+        output.Add(new CilInstruction(CilOpCodes.Xor));
         output.Add(new CilInstruction(CilOpCodes.Stloc, state));
+        return first;
+    }
+
+    private static void EmitGoto(List<CilInstruction> output, CilLocalVariable state, int value, FieldDefinition opaque, ICilLabel dispatch)
+    {
+        EmitSetState(output, state, value, opaque);
         output.Add(new CilInstruction(CilOpCodes.Br, dispatch));
     }
 

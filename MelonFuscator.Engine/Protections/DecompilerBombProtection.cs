@@ -7,69 +7,82 @@ using AsmResolver.PE.DotNet.Metadata.Tables;
 namespace MelonFuscator.Engine.Protections;
 
 /// <summary>
-/// Decompiler bomb. Injects never-called methods whose body is a single, enormous, deeply
-/// nested expression tree (x + x + x + ... on a parameter, so it cannot be constant-folded).
+/// Decompiler bomb. Injects never-called methods whose body is a deeply NESTED call
+/// expression: h(h(h(...h(x)))). Unlike an associative a+a+a chain (which ILSpy folds
+/// iteratively), a nested call expression cannot be flattened, so a structuring decompiler
+/// builds Call(Call(Call(...))) and recurses per level -> StackOverflowException, which is
+/// uncatchable and crashes dnSpy/ILSpy.
 ///
-/// Structuring decompilers (ICSharpCode / dnSpy / ILSpy) build an AST and walk it recursively;
-/// a tree this deep overflows their call stack -> StackOverflowException, which is uncatchable
-/// and takes the whole decompiler down. The CLR never touches it: the method is never called,
-/// so it is never JIT-compiled, and MelonLoader's verifier only inspects names/metadata (which
-/// are perfectly valid here). Placed on the melon entry type + a random sample of other types,
-/// so opening almost anything in the mod crashes the tool.
+/// It is valid IL the JIT would compile iteratively, and it is never called (never JIT'd),
+/// so it is runtime-safe; MelonLoader's verifier only inspects names/metadata, which stay
+/// valid. A bomb is planted in every eligible top-level class, so opening anything crashes
+/// the tool.
 /// </summary>
 public sealed class DecompilerBombProtection : IProtection
 {
     public string Name => "Decompiler Bomb";
     public bool IsEnabled(ObfuscationOptions o) => o.DecompilerBomb;
 
-    private const int Depth = 10000; // ~20 KB of IL; far past any decompiler's recursion limit
+    private const int Depth = 3000; // nested call frames; well past any decompiler's stack
 
     public void Execute(ObfuscationContext ctx)
     {
         var module = ctx.Module;
         var moduleType = module.GetModuleType();
 
-        // Targets: the melon entry types + a random sample of other top-level classes.
-        var targets = new HashSet<TypeDefinition>(ctx.Analysis.MelonTypes);
-        var pool = module.TopLevelTypes
-            .Where(t => t != moduleType && t.IsClass && !t.IsEnum && !t.IsInterface
+        // One shared identity helper that all bombs call, nested.
+        var holder = CilHelpers.CreateStaticHolder(module, ctx.Names.Next());
+        var helper = EmitHelper(module, holder, ctx.Names.Next());
+
+        var targets = module.TopLevelTypes
+            .Where(t => t != moduleType && t != holder && t.IsClass && !t.IsEnum && !t.IsInterface
                         && !(t.BaseType?.Name?.Value == "MulticastDelegate"))
             .ToList();
-        for (int i = 0; i < 8 && pool.Count > 0; i++)
-            targets.Add(pool[ctx.Rng.Next(pool.Count)]);
 
         int count = 0;
         foreach (var type in targets)
         {
-            EmitBomb(module, type, ctx.Names.Next());
+            EmitBomb(module, type, ctx.Names.Next(), helper);
             count++;
         }
-        ctx.Log.Step($"planted {count} decompiler bomb(s) (nesting depth {Depth})");
+        ctx.Log.Step($"planted {count} nested-call decompiler bomb(s) (depth {Depth})");
     }
 
-    private static void EmitBomb(ModuleDefinition module, TypeDefinition type, string name)
+    // static int h(int a) => a;  (never called at runtime)
+    private static MethodDefinition EmitHelper(ModuleDefinition module, TypeDefinition holder, string name)
     {
         var f = module.CorLibTypeFactory;
-        var sig = MethodSignature.CreateStatic(f.Int32, new TypeSignature[] { f.Int32 });
         var m = new MethodDefinition(name,
-            MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig, sig);
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+            MethodSignature.CreateStatic(f.Int32, new TypeSignature[] { f.Int32 }));
+        // NoInlining so a decompiler never elides the call and always sees the nesting.
+        m.ImplAttributes |= MethodImplAttributes.NoInlining;
+        holder.Methods.Add(m);
+
+        var body = new CilMethodBody();
+        m.CilMethodBody = body;
+        body.Instructions.Add(new CilInstruction(CilOpCodes.Ldarg_0));
+        body.Instructions.Add(new CilInstruction(CilOpCodes.Ret));
+        body.Instructions.CalculateOffsets();
+        return m;
+    }
+
+    // static int Bomb(int x) => h(h(h(...h(x))));  (never called at runtime)
+    private static void EmitBomb(ModuleDefinition module, TypeDefinition type, string name, MethodDefinition helper)
+    {
+        var f = module.CorLibTypeFactory;
+        var m = new MethodDefinition(name,
+            MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig,
+            MethodSignature.CreateStatic(f.Int32, new TypeSignature[] { f.Int32 }));
         type.Methods.Add(m);
 
         var body = new CilMethodBody();
         m.CilMethodBody = body;
         var n = body.Instructions;
-
-        // (x + x + x + ... ) with Depth additions - a right-leaning tree of depth ~Depth.
         n.Add(new CilInstruction(CilOpCodes.Ldarg_0));
         for (int i = 0; i < Depth; i++)
-        {
-            n.Add(new CilInstruction(CilOpCodes.Ldarg_0));
-            n.Add(new CilInstruction(CilOpCodes.Add));
-        }
+            n.Add(new CilInstruction(CilOpCodes.Call, helper));  // h(previous)
         n.Add(new CilInstruction(CilOpCodes.Ret));
-
-        // maxstack is only 2 here (accumulator + one operand), so this stays cheap to load.
-        body.ComputeMaxStackOnBuild = true;
         body.Instructions.CalculateOffsets();
     }
 }
