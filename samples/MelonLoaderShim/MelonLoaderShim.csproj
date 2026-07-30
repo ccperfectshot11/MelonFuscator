@@ -1,9 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- The real MelonLoader attributes live in an assembly literally named "MelonLoader". -->
-    <AssemblyName>MelonLoader</AssemblyName>
-  </PropertyGroup>
-
-</Project>

@@ -5,8 +5,8 @@ obj/
 [Rr]elease/
 *.user
 
-# Sample build artifacts
-samples/build/
+# Samples (kept local, not committed)
+samples/
 
 # IDE
 .vs/

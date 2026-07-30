@@ -1,6 +1,6 @@
 # MelonFuscator
 
-An aggressive, **MelonLoader-friendly** .NET obfuscator, inspired by BitMono and ConfuserEx.
+An aggressive, **MelonLoader-friendly** .NET obfuscator.
 
 MelonFuscator protects [MelonLoader](https://github.com/LavaGang/MelonLoader) mods (Unity **Mono** and **IL2CPP / net6+**) with a strong protection stack, while **guaranteeing** the output still loads: every build is checked against MelonLoader's own `AssemblyVerifier` rules before it is accepted.
 
@@ -74,7 +74,6 @@ MelonFuscator MyMod.dll --preset max --seed 1337
 MelonFuscator.Engine    core obfuscation pipeline (AsmResolver-based)
 MelonFuscator.Runtime   runtime templates (reserved for future cloned helpers)
 MelonFuscator.CLI       command-line front end
-samples/                a sample MelonLoader mod + shim for testing
 ```
 
 ## Disclaimer
