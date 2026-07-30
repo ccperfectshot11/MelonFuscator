@@ -10,6 +10,14 @@ public sealed class MelonAnalysis
     public HashSet<TypeDefinition> ProtectedTypes { get; } = new();
     public HashSet<MethodDefinition> ProtectedMethods { get; } = new();
     public HashSet<FieldDefinition> ProtectedFields { get; } = new();
+
+    /// <summary>
+    /// Every identifier that appears inside a string literal (ldstr) anywhere in the module.
+    /// Members with a name in this set are likely looked up by reflection (AccessTools.Method,
+    /// Type.GetType, GetMethod, manual Harmony patching, ...) and must NOT be renamed.
+    /// Collected before string encryption.
+    /// </summary>
+    public HashSet<string> ReferencedNames { get; } = new(StringComparer.Ordinal);
 }
 
 /// <summary>

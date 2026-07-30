@@ -45,9 +45,9 @@ public sealed class RenamerProtection : IProtection
                 method.Name = names.Next();
                 renamedMethods++;
 
-                // Parameter names are cosmetic and not checked by the verifier; strip them.
-                foreach (var p in method.ParameterDefinitions)
-                    p.Name = "";
+                // NOTE: we deliberately do NOT strip parameter names. Harmony matches patch
+                // method parameters by name (__instance, __result, __0, and the original
+                // parameter names), so blanking them breaks every Harmony patch.
             }
 
             // --- Fields ---
@@ -65,6 +65,8 @@ public sealed class RenamerProtection : IProtection
             {
                 if (IsAccessorProtected(prop.GetMethod, analysis) || IsAccessorProtected(prop.SetMethod, analysis))
                     continue;
+                if (IsReferencedByName(prop.Name, analysis))
+                    continue;
                 prop.Name = names.Next();
                 renamedProps++;
             }
@@ -74,11 +76,16 @@ public sealed class RenamerProtection : IProtection
             {
                 if (IsAccessorProtected(evt.AddMethod, analysis) || IsAccessorProtected(evt.RemoveMethod, analysis))
                     continue;
+                if (IsReferencedByName(evt.Name, analysis))
+                    continue;
                 evt.Name = names.Next();
                 renamedEvents++;
             }
 
             // --- Type name + namespace ---
+            // Skip types referenced by name (Type.GetType / AccessTools.TypeByName) or by full name.
+            if (IsReferencedByName(type.Name, analysis) || IsReferencedByName(type.FullName, analysis))
+                continue;
             type.Namespace = null;                // collapse all namespaces to global
             type.Name = names.Next();
             renamedTypes++;
@@ -106,6 +113,9 @@ public sealed class RenamerProtection : IProtection
         if (m.IsVirtual) return false;                  // overrides + interface impls + new virtuals -> vtable safety
         if (m.IsPInvokeImpl) return false;              // native entry point often equals method name
         if (m.Name is not null && ReservedNames.UnityMagicMethods.Contains(m.Name)) return false;
+        if (m.Name is not null && ReservedNames.HarmonyConventionMethods.Contains(m.Name)) return false;
+        if (HasHarmonyPatchAttribute(m)) return false;  // manual/attribute Harmony patch method
+        if (IsReferencedByName(m.Name, analysis)) return false; // looked up by AccessTools/GetMethod
         return true;
     }
 
@@ -116,7 +126,34 @@ public sealed class RenamerProtection : IProtection
         if (declaringType.IsEnum) return false;         // enum member names are often used via ToString/Parse
         // Instance fields on Unity-serializable types may be serialized by name -> keep them.
         if (unityDerived && !f.IsStatic) return false;
+        if (IsReferencedByName(f.Name, analysis)) return false; // looked up by GetField/AccessTools
         return true;
+    }
+
+    private static bool IsReferencedByName(AsmResolver.Utf8String? name, MelonAnalysis analysis)
+        => name is not null && analysis.ReferencedNames.Contains(name);
+
+    private static bool IsReferencedByName(string? name, MelonAnalysis analysis)
+        => name is not null && analysis.ReferencedNames.Contains(name);
+
+    // True if the method or its declaring type carries any HarmonyLib attribute. Such methods
+    // are discovered/invoked by Harmony (by convention or attribute) and must keep their shape.
+    private static bool HasHarmonyPatchAttribute(MethodDefinition m)
+    {
+        if (HasHarmonyAttr(m.CustomAttributes)) return true;
+        if (m.DeclaringType != null && HasHarmonyAttr(m.DeclaringType.CustomAttributes)) return true;
+        return false;
+    }
+
+    private static bool HasHarmonyAttr(IEnumerable<CustomAttribute> attrs)
+    {
+        foreach (var ca in attrs)
+        {
+            var ns = ca.Constructor?.DeclaringType?.Namespace?.Value;
+            if (ns != null && ns.StartsWith("HarmonyLib", StringComparison.Ordinal))
+                return true;
+        }
+        return false;
     }
 
     private static bool IsAccessorProtected(MethodDefinition? accessor, MelonAnalysis analysis)

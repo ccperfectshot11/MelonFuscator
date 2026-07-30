@@ -69,11 +69,17 @@ public sealed class ObfuscationEngine
 
         _log.Info($"Seed: {seed}");
 
+        // Collect every identifier referenced from a string literal BEFORE anything mutates
+        // the module (string encryption would otherwise hide them). Members named like these
+        // are treated as reflection targets and excluded from renaming.
+        CollectReferencedNames(ctx);
+        _log.Info($"Reflection-name guard: {ctx.Analysis.ReferencedNames.Count} names found in string literals.");
+
         // Analyze for MelonLoader specifics.
         if (options.MelonLoaderFriendly)
         {
             _log.Info("Analyzing MelonLoader metadata...");
-            ctx.Analysis = MelonLoaderAnalyzer.Analyze(ctx);
+            MelonLoaderAnalyzer.Analyze(ctx);
             if (ctx.Analysis.IsMelonAssembly)
                 _log.Good($"MelonLoader mod detected ({ctx.Analysis.MelonTypes.Count} melon type(s)).");
             else
@@ -133,6 +139,33 @@ public sealed class ObfuscationEngine
 
         _log.Good("Done.");
         return true;
+    }
+
+    // Collects all ldstr operands (and their dot/plus/backtick-separated segments) so the
+    // renamer can avoid renaming members that are looked up by name at runtime.
+    private static void CollectReferencedNames(ObfuscationContext ctx)
+    {
+        var set = ctx.Analysis.ReferencedNames;
+        char[] seps = { '.', '+', ':', '`', '/', '\\', ' ', ',', '(', ')', '<', '>', '[', ']' };
+
+        foreach (var type in ctx.Module.GetAllTypes())
+        {
+            foreach (var method in type.Methods)
+            {
+                var body = method.CilMethodBody;
+                if (body == null) continue;
+                foreach (var ins in body.Instructions)
+                {
+                    if (ins.OpCode.Code == AsmResolver.PE.DotNet.Cil.CilCode.Ldstr && ins.Operand is string s && s.Length > 0)
+                    {
+                        set.Add(s);
+                        foreach (var part in s.Split(seps, StringSplitOptions.RemoveEmptyEntries))
+                            if (part.Length > 1)
+                                set.Add(part);
+                    }
+                }
+            }
+        }
     }
 
     private void FixBranchSizes(ObfuscationContext ctx)

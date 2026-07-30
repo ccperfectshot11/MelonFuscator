@@ -35,4 +35,13 @@ public static class ReservedNames
     {
         "MonoBehaviour", "ScriptableObject", "Behaviour", "Component", "Object"
     };
+
+    // HarmonyLib discovers these patch-class methods by NAME convention (when they have no
+    // explicit [HarmonyPrefix]/[HarmonyPostfix]/... attribute). Renaming them silently
+    // disables the patch, so we never rename a method with one of these names.
+    public static readonly HashSet<string> HarmonyConventionMethods = new(StringComparer.Ordinal)
+    {
+        "Prefix", "Postfix", "Transpiler", "Finalizer", "Prepare",
+        "Cleanup", "TargetMethod", "TargetMethods", "ReversePatch",
+    };
 }

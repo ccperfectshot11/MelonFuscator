@@ -12,10 +12,10 @@ public static class MelonLoaderAnalyzer
 {
     private const string MelonNamespace = "MelonLoader";
 
-    public static MelonAnalysis Analyze(ObfuscationContext ctx)
+    public static void Analyze(ObfuscationContext ctx)
     {
         var module = ctx.Module;
-        var analysis = new MelonAnalysis();
+        var analysis = ctx.Analysis;
 
         // 1) Find MelonInfoAttribute on the assembly and resolve its SystemType argument.
         if (module.Assembly != null)
@@ -65,8 +65,6 @@ public static class MelonLoaderAnalyzer
                     analysis.ProtectedMethods.Add(body);
             }
         }
-
-        return analysis;
     }
 
     // Reads the first constructor argument of the attribute as a Type and resolves it.
