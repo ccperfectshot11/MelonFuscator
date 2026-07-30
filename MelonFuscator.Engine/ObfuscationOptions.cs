@@ -37,6 +37,7 @@ public sealed class ObfuscationOptions
     public bool AntiDebug { get; set; } = true;
     public bool AntiTamper { get; set; } = true;
     public bool AntiDecompiler { get; set; } = true; // anti-dnSpy / anti-ILSpy / anti-de4dot
+    public bool DecompilerBomb { get; set; } = true; // never-called expression bombs that StackOverflow the decompiler
 
     /// <summary>Use a Unicode alphabet for renaming (still IsNameValid + entropy safe).</summary>
     public bool UnicodeNames { get; set; } = false;
@@ -66,6 +67,7 @@ public sealed class ObfuscationOptions
                 o.AntiDebug = false;
                 o.AntiTamper = false;
                 o.AntiDecompiler = true;
+                o.DecompilerBomb = false;
                 break;
             case ObfuscationPreset.Melon:
                 o.Rename = true;
@@ -76,6 +78,7 @@ public sealed class ObfuscationOptions
                 o.AntiDebug = true;
                 o.AntiTamper = false;      // anti-tamper is risky with the verifier; off by default
                 o.AntiDecompiler = true;
+                o.DecompilerBomb = false;  // bloaty; opt in via max
                 break;
             case ObfuscationPreset.Max:
                 o.Rename = true;
@@ -86,6 +89,7 @@ public sealed class ObfuscationOptions
                 o.AntiDebug = true;
                 o.AntiTamper = true;
                 o.AntiDecompiler = true;
+                o.DecompilerBomb = true;
                 break;
         }
         return o;

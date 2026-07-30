@@ -25,6 +25,7 @@ public sealed class ObfuscationEngine
         new AntiDebugProtection(),
         new AntiTamperProtection(),
         new AntiDecompilerProtection(),
+        new DecompilerBombProtection(),
         new RenamerProtection(),
         new WatermarkProtection(),   // injected marker/watermark type names must survive renaming
         new IntegrityCheckProtection(),  // truly last: needs the final type count

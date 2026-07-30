@@ -63,6 +63,7 @@ for (int i = 1; i < args.Length; i++)
         case "--no-antidebug": options.AntiDebug = false; break;
         case "--no-antitamper": options.AntiTamper = false; break;
         case "--no-anti": options.AntiDecompiler = false; break;
+        case "--no-bomb": options.DecompilerBomb = false; break;
         default:
             log.Warn($"Ignoring unknown argument: {a}");
             break;
@@ -110,7 +111,7 @@ static void PrintHelp()
     Console.WriteLine();
     Console.WriteLine("  Disable individual protections:");
     Console.WriteLine("  --no-rename  --no-strings  --no-proxy  --no-flow");
-    Console.WriteLine("  --no-antidebug  --no-antitamper  --no-anti");
+    Console.WriteLine("  --no-antidebug  --no-antitamper  --no-anti  --no-bomb");
     Console.WriteLine();
     Console.WriteLine("Examples:");
     Console.WriteLine("  MelonFuscator MyMod.dll --preset max");

@@ -33,6 +33,7 @@ It also repairs the `typeof(Mod)` inside `MelonInfoAttribute` after renaming (th
 | **Anti-Debug (native)** | `Debugger.IsAttached`/`IsLogging`, `IsDebuggerPresent`, `CheckRemoteDebuggerPresent`, `NtQueryInformationProcess` (ProcessDebugPort/ObjectHandle/Flags) and kernel-driver detection (TitanHide / Cheat Engine DBK / ScyllaHide). Wrapped in try/catch for non-Windows. |
 | **Anti-Tamper** | Detects CLR profilers/instrumentation via their environment variables and terminates. |
 | **Anti-Decompiler** | `SuppressIldasm` + decoy string-decryptor methods that poison de4dot's automatic string-decryptor detection. |
+| **Decompiler Bomb** | Never-called methods containing a huge deeply-nested expression tree. The CLR never JITs them (and they're valid IL anyway), but a structuring decompiler recurses on the AST and **StackOverflows** — crashing dnSpy/ILSpy when the type is opened. On at `max` (`--no-bomb` to disable). |
 | **Watermark + Anti-de4dot** | `[module: MelonedBy("MelonFuscator.vX.Y.Z")]` + fake obfuscator-marker attributes (ConfusedBy, Dotfuscator, ...) to mislead de4dot. |
 
 All anti-decompiler techniques keep the metadata **valid** (so MelonLoader still loads the mod); they make decompiled output useless rather than corrupting the image.

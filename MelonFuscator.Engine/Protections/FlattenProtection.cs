@@ -24,18 +24,19 @@ public sealed class FlattenProtection : IProtection
 
     public void Execute(ObfuscationContext ctx)
     {
-        int flattened = 0, skipped = 0;
+        int flattened = 0, skipped = 0, ehSkip = 0;
         foreach (var type in ctx.Module.GetAllTypes())
         {
             foreach (var method in type.Methods)
             {
                 var body = method.CilMethodBody;
                 if (body == null) continue;
+                if (body.ExceptionHandlers.Count != 0) ehSkip++;
                 if (TryFlatten(ctx, body)) flattened++;
                 else skipped++;
             }
         }
-        ctx.Log.Step($"flattened {flattened} method(s), left {skipped} untouched (EH/switch/stack)");
+        ctx.Log.Step($"flattened {flattened} method(s), left {skipped} untouched ({ehSkip} have try/catch)");
     }
 
     private static bool TryFlatten(ObfuscationContext ctx, CilMethodBody body)
