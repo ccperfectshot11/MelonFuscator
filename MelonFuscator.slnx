@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MelonFuscator.CLI/MelonFuscator.CLI.csproj" />
+    <Project Path="src/MelonFuscator.Engine/MelonFuscator.Engine.csproj" />
+    <Project Path="src/MelonFuscator.Runtime/MelonFuscator.Runtime.csproj" />
+  </Folder>
+</Solution>
