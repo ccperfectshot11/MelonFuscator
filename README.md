@@ -23,7 +23,10 @@ It also repairs the `typeof(Mod)` inside `MelonInfoAttribute` after renaming (th
 | Protection | What it does |
 |---|---|
 | **Renamer** | Entropy-aware renaming of types/methods/fields/props/events; skips virtual overrides, Unity magic methods, P/Invoke, ctors, Harmony patch methods, and anything referenced by name in a string literal (reflection guard); repairs `System.Type` attribute args. Optional Unicode alphabet (`--unicode`). |
-| **String Encryption** | Encrypts every `ldstr` (UTF-8 keystream), decrypted by an in-module method using only corlib types (portable Mono/CoreCLR). |
+| **DynCipher** | A fresh random reversible byte cipher (XOR/ADD op-chain + keystream) generated **per build**, so no two outputs share a decryptor and no generic automated deobfuscator can hard-code the algorithm. Drives string + constant encryption. |
+| **String Encryption** | Encrypts every `ldstr` (UTF-8, per-build DynCipher), decrypted by an in-module method using only corlib types (portable Mono/CoreCLR). |
+| **Constant Encryption** | Non-trivial `ldc.i4` integer literals are replaced with an encrypted value + a call to an in-module decoder (per-build cipher). |
+| **Integrity Check** | Embeds the final type count and verifies it at runtime via reflection; a deobfuscator that strips types trips it. **Fail-open** (wrapped in try/catch, only reacts when it can positively confirm types were removed) so it never false-positives on a legit IL2CPP mod. |
 | **Proxy Calls** | Reroutes external static calls through generated proxies — breaks de4dot call-graph analysis. |
 | **Control-Flow Flattening** | Splits each eligible method into basic blocks driven by a randomized `switch` dispatcher. Structuring decompilers (ICSharpCode/dnSpy/ILSpy) emit goto-soup or throw; the JIT runs it fine. On at `max` (`--flatten`). |
 | **Control Flow** | Opaque predicates at method entry that decompilers cannot fold away. |

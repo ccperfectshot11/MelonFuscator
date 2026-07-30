@@ -32,5 +32,6 @@ public sealed class ObfuscationContext
     public required Logger Log { get; init; }
     public required Random Rng { get; init; }
     public required NameGenerator Names { get; init; }
+    public required ByteCipher Cipher { get; init; }
     public MelonAnalysis Analysis { get; set; } = new();
 }

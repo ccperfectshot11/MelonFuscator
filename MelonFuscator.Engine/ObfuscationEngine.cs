@@ -18,6 +18,7 @@ public sealed class ObfuscationEngine
     private static IReadOnlyList<IProtection> BuildPipeline() => new IProtection[]
     {
         new StringEncryptionProtection(),
+        new ConstantsProtection(),
         new ProxyCallProtection(),
         new FlattenProtection(),
         new ControlFlowProtection(),
@@ -25,7 +26,8 @@ public sealed class ObfuscationEngine
         new AntiTamperProtection(),
         new AntiDecompilerProtection(),
         new RenamerProtection(),
-        new WatermarkProtection(),   // last: injected marker/watermark type names must survive renaming
+        new WatermarkProtection(),   // injected marker/watermark type names must survive renaming
+        new IntegrityCheckProtection(),  // truly last: needs the final type count
     };
 
     public bool Run(ObfuscationOptions options)
@@ -75,6 +77,7 @@ public sealed class ObfuscationEngine
             Log = _log,
             Rng = rng,
             Names = names,
+            Cipher = new ByteCipher(rng),
         };
 
         _log.Info($"Seed: {seed}");

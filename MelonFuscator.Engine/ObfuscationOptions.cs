@@ -30,6 +30,7 @@ public sealed class ObfuscationOptions
     // --- Individual protections ---
     public bool Rename { get; set; } = true;
     public bool EncryptStrings { get; set; } = true;
+    public bool EncryptConstants { get; set; } = true;  // numeric ldc.i4 constants
     public bool ProxyCalls { get; set; } = true;
     public bool ControlFlow { get; set; } = true;   // opaque predicates
     public bool Flatten { get; set; } = true;        // switch-dispatcher control-flow flattening
@@ -58,6 +59,7 @@ public sealed class ObfuscationOptions
             case ObfuscationPreset.Light:
                 o.Rename = true;
                 o.EncryptStrings = true;
+                o.EncryptConstants = false;
                 o.ProxyCalls = false;
                 o.ControlFlow = false;
                 o.Flatten = false;
