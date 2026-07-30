@@ -1,0 +1,93 @@
+MelonFuscator License
+Source-Available, Restricted-Use License — Version 1.0
+
+Copyright (c) 2026 ccperfectshot11 (the "Author")
+
+This is NOT an OSI-approved open-source license. It is a source-available license
+that grants broad rights for legitimate protection purposes while forbidding use of
+the software as a tool for unauthorized reverse engineering.
+
+--------------------------------------------------------------------------------
+1. DEFINITIONS
+
+   "Software" means the MelonFuscator source code, binaries, and accompanying
+   files distributed under this License.
+
+   "You" means any individual or entity exercising rights under this License.
+
+   "Permitted Purpose" means obfuscating, protecting, or hardening software,
+   assemblies, or content that You own, authored, or are explicitly and lawfully
+   authorized to protect (for example, Your own MelonLoader mods).
+
+--------------------------------------------------------------------------------
+2. GRANT
+
+   Subject to the terms below, the Author grants You a worldwide, royalty-free,
+   non-exclusive license to use, copy, modify, and distribute the Software, in
+   source or binary form, solely for the Permitted Purpose.
+
+--------------------------------------------------------------------------------
+3. RESTRICTIONS
+
+   You MUST NOT use the Software, in whole or in part, or any derivative of it,
+   to:
+
+   (a) deobfuscate, decompile, disassemble, reverse engineer, unpack, decrypt,
+       crack, tamper with, or circumvent technical protection measures of any
+       software, game, application, or content that You do not own or for which
+       You do not hold explicit written authorization;
+
+   (b) develop, train, or assist any tool whose primary purpose is the activity
+       described in (a);
+
+   (c) violate the terms of service, EULA, or applicable law of any third-party
+       software or platform.
+
+   You MUST NOT remove or alter this License, the copyright notice, or author
+   attribution.
+
+--------------------------------------------------------------------------------
+4. SHARE-ALIKE (COPYLEFT)
+
+   If You distribute the Software or any modified version of it, You must:
+
+   (a) distribute it under this same License (Version 1.0 or a later version
+       published by the Author);
+
+   (b) make the complete corresponding source code available to recipients;
+
+   (c) retain this License text, the copyright notice, and clear attribution to
+       the Author and to the "MelonFuscator" project.
+
+--------------------------------------------------------------------------------
+5. TRADEMARKS
+
+   This License does not grant permission to use the name "MelonFuscator" or the
+   Author's name to endorse or promote products derived from the Software without
+   prior written permission.
+
+--------------------------------------------------------------------------------
+6. TERMINATION
+
+   Any breach of this License automatically and immediately terminates all rights
+   granted to You. Upon termination You must cease all use and distribution of the
+   Software.
+
+--------------------------------------------------------------------------------
+7. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+--------------------------------------------------------------------------------
+8. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+   OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+--------------------------------------------------------------------------------
+By using, copying, modifying, or distributing the Software, You accept and agree
+to be bound by the terms of this License.

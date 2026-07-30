@@ -76,6 +76,15 @@ MelonFuscator.Runtime   runtime templates (reserved for future cloned helpers)
 MelonFuscator.CLI       command-line front end
 ```
 
+## License
+
+Source-available under the **MelonFuscator License** (see [LICENSE](LICENSE)).
+
+You may freely use and modify it to protect **your own** mods/software. You may **not**
+use it to deobfuscate, reverse-engineer, crack, or circumvent protections on any software
+you do not own or are not authorized to modify. Distributed forks must stay source-available
+under the same license with attribution.
+
 ## Disclaimer
 
 For protecting your own MelonLoader mods and for authorized security research/education.
