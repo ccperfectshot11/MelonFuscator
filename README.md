@@ -22,9 +22,10 @@ It also repairs the `typeof(Mod)` inside `MelonInfoAttribute` after renaming (th
 
 | Protection | What it does |
 |---|---|
-| **Renamer** | Entropy-aware renaming of types/methods/fields/props/events; skips virtual overrides, Unity magic methods, P/Invoke, ctors; repairs `System.Type` attribute args. |
+| **Renamer** | Entropy-aware renaming of types/methods/fields/props/events; skips virtual overrides, Unity magic methods, P/Invoke, ctors, Harmony patch methods, and anything referenced by name in a string literal (reflection guard); repairs `System.Type` attribute args. Optional Unicode alphabet (`--unicode`). |
 | **String Encryption** | Encrypts every `ldstr` (UTF-8 keystream), decrypted by an in-module method using only corlib types (portable Mono/CoreCLR). |
 | **Proxy Calls** | Reroutes external static calls through generated proxies — breaks de4dot call-graph analysis. |
+| **Control-Flow Flattening** | Splits each eligible method into basic blocks driven by a randomized `switch` dispatcher. Structuring decompilers (ICSharpCode/dnSpy/ILSpy) emit goto-soup or throw; the JIT runs it fine. On at `max` (`--flatten`). |
 | **Control Flow** | Opaque predicates at method entry that decompilers cannot fold away. |
 | **Anti-Debug (native)** | `Debugger.IsAttached`/`IsLogging`, `IsDebuggerPresent`, `CheckRemoteDebuggerPresent`, `NtQueryInformationProcess` (ProcessDebugPort/ObjectHandle/Flags) and kernel-driver detection (TitanHide / Cheat Engine DBK / ScyllaHide). Wrapped in try/catch for non-Windows. |
 | **Anti-Tamper** | Detects CLR profilers/instrumentation via their environment variables and terminates. |
@@ -66,10 +67,10 @@ MelonFuscator MyMod.dll --preset max --seed 1337
 ## Project layout
 
 ```
-src/MelonFuscator.Engine    core obfuscation pipeline (AsmResolver-based)
-src/MelonFuscator.Runtime   runtime templates (reserved for future cloned helpers)
-src/MelonFuscator.CLI        command-line front end
-samples/                     a sample MelonLoader mod + shim for testing
+MelonFuscator.Engine    core obfuscation pipeline (AsmResolver-based)
+MelonFuscator.Runtime   runtime templates (reserved for future cloned helpers)
+MelonFuscator.CLI       command-line front end
+samples/                a sample MelonLoader mod + shim for testing
 ```
 
 ## Disclaimer

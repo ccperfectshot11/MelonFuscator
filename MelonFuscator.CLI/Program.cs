@@ -57,6 +57,9 @@ for (int i = 1; i < args.Length; i++)
         case "--no-strings": options.EncryptStrings = false; break;
         case "--no-proxy": options.ProxyCalls = false; break;
         case "--no-flow": options.ControlFlow = false; break;
+        case "--flatten": options.Flatten = true; break;
+        case "--no-flatten": options.Flatten = false; break;
+        case "--unicode": options.UnicodeNames = true; break;
         case "--no-antidebug": options.AntiDebug = false; break;
         case "--no-antitamper": options.AntiTamper = false; break;
         case "--no-anti": options.AntiDecompiler = false; break;
@@ -101,6 +104,9 @@ static void PrintHelp()
     Console.WriteLine("  --verbose              Verbose logging");
     Console.WriteLine("  --no-verify            Skip the MelonLoader self-check");
     Console.WriteLine("  --no-melon             Do not treat input as a MelonLoader mod");
+    Console.WriteLine();
+    Console.WriteLine("  --flatten / --no-flatten   Control-flow flattening (on at 'max')");
+    Console.WriteLine("  --unicode                  Unicode rename alphabet (experimental)");
     Console.WriteLine();
     Console.WriteLine("  Disable individual protections:");
     Console.WriteLine("  --no-rename  --no-strings  --no-proxy  --no-flow");

@@ -31,10 +31,14 @@ public sealed class ObfuscationOptions
     public bool Rename { get; set; } = true;
     public bool EncryptStrings { get; set; } = true;
     public bool ProxyCalls { get; set; } = true;
-    public bool ControlFlow { get; set; } = true;
+    public bool ControlFlow { get; set; } = true;   // opaque predicates
+    public bool Flatten { get; set; } = true;        // switch-dispatcher control-flow flattening
     public bool AntiDebug { get; set; } = true;
     public bool AntiTamper { get; set; } = true;
     public bool AntiDecompiler { get; set; } = true; // anti-dnSpy / anti-ILSpy / anti-de4dot
+
+    /// <summary>Use a Unicode alphabet for renaming (still IsNameValid + entropy safe).</summary>
+    public bool UnicodeNames { get; set; } = false;
 
     /// <summary>Seed for the random generator (0 = seeded from time).</summary>
     public int Seed { get; set; } = 0;
@@ -56,6 +60,7 @@ public sealed class ObfuscationOptions
                 o.EncryptStrings = true;
                 o.ProxyCalls = false;
                 o.ControlFlow = false;
+                o.Flatten = false;
                 o.AntiDebug = false;
                 o.AntiTamper = false;
                 o.AntiDecompiler = true;
@@ -65,6 +70,7 @@ public sealed class ObfuscationOptions
                 o.EncryptStrings = true;
                 o.ProxyCalls = true;
                 o.ControlFlow = true;
+                o.Flatten = false;         // flattening is powerful but heavier; opt in via max/--flatten
                 o.AntiDebug = true;
                 o.AntiTamper = false;      // anti-tamper is risky with the verifier; off by default
                 o.AntiDecompiler = true;
@@ -74,6 +80,7 @@ public sealed class ObfuscationOptions
                 o.EncryptStrings = true;
                 o.ProxyCalls = true;
                 o.ControlFlow = true;
+                o.Flatten = true;
                 o.AntiDebug = true;
                 o.AntiTamper = true;
                 o.AntiDecompiler = true;

@@ -17,20 +17,29 @@ public sealed class NameGenerator
     private const string MasterPool =
         "aQbWcErTdYfUgIhOjPkLlZmXnCvBpNqMsAwDeRtGyHuJiKoLpZxXcCvVbBnN";
 
+    // Unicode pool: distinct Greek + Cyrillic lowercase letters. All are UnicodeCategory
+    // LowercaseLetter, so MelonLoader's IsNameValid accepts them, yet they render as an
+    // alien, near-Latin homoglyph soup. Distinct code points keep the entropy healthy.
+    private const string UnicodePool =
+        "αβγδεζηθικλμνξο" +
+        "πρστυφχψω" +
+        "абвгджзиклмнпрстфцчш";
+
     private readonly char[] _alphabet;
     private readonly Random _rng;
     private readonly HashSet<string> _used = new(StringComparer.Ordinal);
 
-    public NameGenerator(Random rng, int alphabetSize)
+    public NameGenerator(Random rng, int alphabetSize, bool unicode = false)
     {
         _rng = rng;
+        var pool = unicode ? UnicodePool : MasterPool;
         if (alphabetSize < 16) alphabetSize = 16;   // below 16 => entropy < 4 => rejected
         if (alphabetSize > 45) alphabetSize = 45;   // above ~45 => entropy > 5.5 => rejected
 
         // Build an alphabet of DISTINCT characters from the pool.
         var distinct = new List<char>();
         var seen = new HashSet<char>();
-        foreach (var c in MasterPool)
+        foreach (var c in pool)
         {
             if (seen.Add(c))
                 distinct.Add(c);

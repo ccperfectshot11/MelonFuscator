@@ -19,6 +19,7 @@ public sealed class ObfuscationEngine
     {
         new StringEncryptionProtection(),
         new ProxyCallProtection(),
+        new FlattenProtection(),
         new ControlFlowProtection(),
         new AntiDebugProtection(),
         new AntiTamperProtection(),
@@ -55,7 +56,16 @@ public sealed class ObfuscationEngine
 
         var seed = options.Seed != 0 ? options.Seed : Environment.TickCount;
         var rng = new Random(seed);
-        var names = new NameGenerator(rng, options.RenameAlphabetSize);
+        // Unicode letters are a disjoint character set added on top of retained ASCII names,
+        // which raises the combined entropy. Use a smaller default alphabet so we stay under
+        // MelonLoader's 5.5 ceiling (the self-check still guards the final value).
+        if (options.UnicodeNames && options.RenameAlphabetSize == 32)
+        {
+            options.RenameAlphabetSize = 18;
+            _log.Info("Unicode names: alphabet auto-set to 18 to keep entropy <= 5.5.");
+        }
+
+        var names = new NameGenerator(rng, options.RenameAlphabetSize, options.UnicodeNames);
 
         var ctx = new ObfuscationContext
         {
