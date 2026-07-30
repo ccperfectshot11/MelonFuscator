@@ -27,7 +27,7 @@ public sealed class MelonAnalysis
 public sealed class ObfuscationContext
 {
     public required ModuleDefinition Module { get; init; }
-    public required ModuleDefinition RuntimeModule { get; init; }
+    public ModuleDefinition? RuntimeModule { get; init; }  // reserved; not required
     public required ObfuscationOptions Options { get; init; }
     public required Logger Log { get; init; }
     public required Random Rng { get; init; }

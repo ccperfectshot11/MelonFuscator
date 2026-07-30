@@ -16,3 +16,6 @@ samples/
 # NuGet
 *.nupkg
 packages/
+
+# Publish output
+publish/

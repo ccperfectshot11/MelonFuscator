@@ -48,14 +48,10 @@ public sealed class ObfuscationEngine
         if (module.RuntimeContext.AssemblyResolver is AssemblyResolverBase arb)
             arb.SearchDirectories.Add(inputDir);
 
-        // Load the runtime template module (the code we clone into the target).
+        // Optional runtime template module (reserved for future cloned helpers). All current
+        // protections emit IL directly into the target, so this is not required.
         var runtimePath = Path.Combine(AppContext.BaseDirectory, "MelonFuscator.Runtime.dll");
-        if (!File.Exists(runtimePath))
-        {
-            _log.Error($"Runtime template not found: {runtimePath}");
-            return false;
-        }
-        var runtimeModule = ModuleDefinition.FromFile(runtimePath);
+        var runtimeModule = File.Exists(runtimePath) ? ModuleDefinition.FromFile(runtimePath) : null;
 
         var seed = options.Seed != 0 ? options.Seed : Environment.TickCount;
         var rng = new Random(seed);
