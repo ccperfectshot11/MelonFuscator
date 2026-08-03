@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="MelonFuscator.CLI/MelonFuscator.CLI.csproj" />
   <Project Path="MelonFuscator.Engine/MelonFuscator.Engine.csproj" />
+  <Project Path="MelonFuscator.GUI/MelonFuscator.GUI.csproj" />
   <Project Path="MelonFuscator.Runtime/MelonFuscator.Runtime.csproj" />
 </Solution>
