@@ -40,6 +40,10 @@ It also repairs the `typeof(Mod)` inside `MelonInfoAttribute` after renaming (th
 
 All anti-decompiler techniques keep the metadata **valid** (so MelonLoader still loads the mod); they make decompiled output useless rather than corrupting the image.
 
+### Coroutine / async safety
+
+Every protection that rewrites method bodies (MBA, data encoding, constant encryption, call/field proxying, control-flow flattening, opaque predicates) **skips compiler-generated state machines** — the nested types C# emits for iterators (`yield return`, Unity coroutines) and `async` methods. Those resume by switching on a hidden `<>1__state` field into the middle of `MoveNext`, an implicit protocol structural rewrites can't see; touching them produces IL that verifies but throws `InvalidProgramException` the moment the JIT runs the coroutine. MelonFuscator detects them by **implemented interface** (`IEnumerator` / `IAsyncStateMachine`), so the guard survives renaming and holds regardless of the type's name.
+
 ## Build
 
 ```
