@@ -68,6 +68,8 @@
                     <CheckBox x:Name="chkRename"         Style="{StaticResource Check}" Content="Rename"              Margin="0,4"/>
                     <CheckBox x:Name="chkStrings"        Style="{StaticResource Check}" Content="Encrypt strings"     Margin="0,4"/>
                     <CheckBox x:Name="chkConstants"      Style="{StaticResource Check}" Content="Encrypt constants"   Margin="0,4"/>
+                    <CheckBox x:Name="chkMutate"         Style="{StaticResource Check}" Content="MBA mutation"        Margin="0,4"/>
+                    <CheckBox x:Name="chkEncode"         Style="{StaticResource Check}" Content="Encode locals"       Margin="0,4"/>
                     <CheckBox x:Name="chkProxy"          Style="{StaticResource Check}" Content="Proxy calls"         Margin="0,4"/>
                     <CheckBox x:Name="chkFlatten"        Style="{StaticResource Check}" Content="Control-flow flatten" Margin="0,4"/>
                     <CheckBox x:Name="chkFlow"           Style="{StaticResource Check}" Content="Opaque predicates"   Margin="0,4"/>

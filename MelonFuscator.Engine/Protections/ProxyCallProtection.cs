@@ -65,7 +65,68 @@ public sealed class ProxyCallProtection : IProtection
             }
         }
 
-        ctx.Log.Step($"created {cache.Count} proxies, redirected {redirected} call(s)");
+        int fieldReads = ProxyStaticFieldReads(module, holder, methods, ctx);
+        ctx.Log.Step($"created {cache.Count} call proxies (redirected {redirected}), {fieldReads} static field read(s) via accessors");
+    }
+
+    // Replaces 'ldsfld F' on in-module static fields with a call to a generated getter, hiding
+    // which fields are read where. Reads only (getters) - never touches writes, so 'initonly'
+    // fields stay valid. The field is widened to public so the accessor can read it.
+    private static int ProxyStaticFieldReads(ModuleDefinition module, TypeDefinition holder,
+        List<MethodDefinition> methods, ObfuscationContext ctx)
+    {
+        var getters = new Dictionary<FieldDefinition, MethodDefinition>();
+        int redirected = 0;
+
+        foreach (var method in methods)
+        {
+            var instrs = method.CilMethodBody!.Instructions;
+            for (int i = 0; i < instrs.Count; i++)
+            {
+                var ins = instrs[i];
+                if (ins.OpCode.Code != CilCode.Ldsfld) continue;
+                // Only in-module fields (FieldDefinition), i.e. ones we can widen + read safely.
+                if (ins.Operand is not FieldDefinition f) continue;
+                if (f.DeclaringType?.DeclaringModule != module) continue;
+                if (f.Signature is null) continue;
+
+                try
+                {
+                    var getter = GetOrCreateGetter(module, holder, getters, f, ctx);
+                    ins.OpCode = CilOpCodes.Call;
+                    ins.Operand = getter;
+                    redirected++;
+                }
+                catch
+                {
+                    // Leave the access untouched on anything unexpected.
+                }
+            }
+        }
+        return redirected;
+    }
+
+    private static MethodDefinition GetOrCreateGetter(ModuleDefinition module, TypeDefinition holder,
+        Dictionary<FieldDefinition, MethodDefinition> getters, FieldDefinition f, ObfuscationContext ctx)
+    {
+        if (getters.TryGetValue(f, out var existing)) return existing;
+
+        // Widen visibility so the accessor (in another type) can legally read the field.
+        f.Attributes = (f.Attributes & ~FieldAttributes.FieldAccessMask) | FieldAttributes.Public;
+
+        var sig = MethodSignature.CreateStatic(f.Signature!.FieldType);
+        var getter = new MethodDefinition(ctx.Names.Next(),
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig, sig);
+        holder.Methods.Add(getter);
+
+        var body = new CilMethodBody();
+        getter.CilMethodBody = body;
+        body.Instructions.Add(new CilInstruction(CilOpCodes.Ldsfld, f));
+        body.Instructions.Add(new CilInstruction(CilOpCodes.Ret));
+        body.Instructions.CalculateOffsets();
+
+        getters[f] = getter;
+        return getter;
     }
 
     private static bool IsExternal(ModuleDefinition module, IMethodDefOrRef target)
@@ -95,9 +156,14 @@ public sealed class ProxyCallProtection : IProtection
         proxy.CilMethodBody = body;
         var n = body.Instructions;
 
+        // Forward via an indirect call (ldftn + calli) instead of a direct 'call'. This turns the
+        // call edge into a function-pointer invocation, hiding it from naive call-graph analysis
+        // and breaking de4dot's "simple forwarder" proxy remover.
         foreach (var p in proxy.Parameters)
             n.Add(new CilInstruction(CilOpCodes.Ldarg, p));
-        n.Add(new CilInstruction(CilOpCodes.Call, target));
+        n.Add(new CilInstruction(CilOpCodes.Ldftn, target));
+        n.Add(new CilInstruction(CilOpCodes.Calli, new StandAloneSignature(
+            MethodSignature.CreateStatic(msig.ReturnType, msig.ParameterTypes.ToArray()))));
         n.Add(new CilInstruction(CilOpCodes.Ret));
         body.Instructions.CalculateOffsets();
 

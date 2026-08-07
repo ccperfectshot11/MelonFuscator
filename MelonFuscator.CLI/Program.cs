@@ -55,6 +55,9 @@ for (int i = 1; i < args.Length; i++)
         // Per-protection toggles.
         case "--no-rename": options.Rename = false; break;
         case "--no-strings": options.EncryptStrings = false; break;
+        case "--no-constants": options.EncryptConstants = false; break;
+        case "--no-mutate": options.Mutate = false; break;
+        case "--no-encode": options.EncodeLocals = false; break;
         case "--no-proxy": options.ProxyCalls = false; break;
         case "--no-flow": options.ControlFlow = false; break;
         case "--flatten": options.Flatten = true; break;
@@ -110,7 +113,7 @@ static void PrintHelp()
     Console.WriteLine("  --unicode                  Unicode rename alphabet (experimental)");
     Console.WriteLine();
     Console.WriteLine("  Disable individual protections:");
-    Console.WriteLine("  --no-rename  --no-strings  --no-proxy  --no-flow");
+    Console.WriteLine("  --no-rename  --no-strings  --no-constants  --no-mutate  --no-encode  --no-proxy  --no-flow");
     Console.WriteLine("  --no-antidebug  --no-antitamper  --no-anti  --no-bomb");
     Console.WriteLine();
     Console.WriteLine("Examples:");

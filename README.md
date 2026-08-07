@@ -26,10 +26,12 @@ It also repairs the `typeof(Mod)` inside `MelonInfoAttribute` after renaming (th
 | **DynCipher** | A fresh random reversible byte cipher (XOR/ADD op-chain + keystream) generated **per build**, so no two outputs share a decryptor and no generic automated deobfuscator can hard-code the algorithm. Drives string + constant encryption. |
 | **String Encryption** | Encrypts every `ldstr` (UTF-8, per-build DynCipher), decrypted by an in-module method using only corlib types (portable Mono/CoreCLR). |
 | **Constant Encryption** | Non-trivial `ldc.i4` integer literals are replaced with an encrypted value + a call to an in-module decoder (per-build cipher). |
+| **MBA Mutation** | Rewrites 32-bit integer arithmetic (`+ - & \| ^`) into algebraically identical **Mixed Boolean-Arithmetic** expressions, e.g. `a + b` → `(a ^ b) + 2·(a & b)`, with a random identity per site per build. The value is bit-for-bit unchanged; the decompiled output is tangled arithmetic that pattern cleaners (de4dot) no longer recognise. A sound stack-type analyzer guarantees only provably-int32 ops are touched. |
+| **Data Encoding** | Every eligible 32-bit integer local is kept in memory **XOR-encoded** with a per-local key: each store writes `value ^ K`, each load decodes it. The real value only ever exists briefly on the stack, so a memory watch/dump shows scrambled data. Lossless and behavior-preserving (skips locals whose address is taken). |
 | **Integrity Check** | Embeds the final type count and verifies it at runtime via reflection; a deobfuscator that strips types trips it. **Fail-open** (wrapped in try/catch, only reacts when it can positively confirm types were removed) so it never false-positives on a legit IL2CPP mod. |
-| **Proxy Calls** | Reroutes external static calls through generated proxies — breaks de4dot call-graph analysis. |
-| **Control-Flow Flattening** | Splits each eligible method into basic blocks driven by a randomized `switch` dispatcher. Structuring decompilers (ICSharpCode/dnSpy/ILSpy) emit goto-soup or throw; the JIT runs it fine. On at `max` (`--flatten`). |
-| **Control Flow** | Opaque predicates at method entry that decompilers cannot fold away. |
+| **Proxy Calls** | Reroutes external static calls through generated proxies that forward via `ldftn` + **`calli`** (a function-pointer indirection, not a direct call edge), and reroutes static field **reads** through generated accessor methods. Hides the call/field graph and breaks de4dot's forwarder remover. |
+| **Control-Flow Flattening** | Splits methods into basic blocks driven by a randomized `switch` dispatcher whose state is XORed with a runtime-seeded field, so decompilers emit goto-soup or throw while the JIT runs it fine. Handles blocks that leave values on the stack (ternary / short-circuit) via **stack-spilling**, supports `switch`, and flattens **inside `try` / `catch` / `finally` bodies** (each self-contained region independently, preserving exception semantics). Anything not provably safe is left untouched. On at `max` (`--flatten`). |
+| **Control Flow** | Opaque predicates at every method entry, seeded at load time from `Environment.TickCount` and built as identities true for **any** integer (e.g. `(x \| 1) != 0`, "`x·(x+1)` is even"), so a decompiler cannot fold them away or prove the branch is dead. |
 | **Anti-Debug (native)** | `Debugger.IsAttached`/`IsLogging`, `IsDebuggerPresent`, `CheckRemoteDebuggerPresent`, `NtQueryInformationProcess` (ProcessDebugPort/ObjectHandle/Flags) and kernel-driver detection (TitanHide / Cheat Engine DBK / ScyllaHide). Wrapped in try/catch for non-Windows. |
 | **Anti-Tamper** | Detects CLR profilers/instrumentation via their environment variables and terminates. |
 | **Anti-Decompiler** | `SuppressIldasm` + decoy string-decryptor methods that poison de4dot's automatic string-decryptor detection. |
@@ -57,9 +59,12 @@ MelonFuscator <input.dll> [options]
   --no-verify            Skip the MelonLoader self-check
   --no-melon             Do not treat input as a MelonLoader mod
 
+  --flatten / --no-flatten   Control-flow flattening (on at 'max')
+  --unicode                  Unicode rename alphabet (experimental)
+
   Disable individual protections:
-  --no-rename  --no-strings  --no-proxy  --no-flow
-  --no-antidebug  --no-antitamper  --no-anti
+  --no-rename  --no-strings  --no-constants  --no-mutate  --no-encode  --no-proxy  --no-flow
+  --no-antidebug  --no-antitamper  --no-anti  --no-bomb
 ```
 
 Example:
@@ -73,7 +78,8 @@ MelonFuscator MyMod.dll --preset max --seed 1337
 ```
 MelonFuscator.Engine    core obfuscation pipeline (AsmResolver-based)
 MelonFuscator.Runtime   runtime templates (reserved for future cloned helpers)
-MelonFuscator.CLI       command-line front end
+MelonFuscator.CLI       command-line front end (MelonFuscator.CLI.exe)
+MelonFuscator.GUI       WPF desktop front end (MelonFuscator.GUI.exe)
 ```
 
 ## License

@@ -19,7 +19,7 @@ public partial class MainWindow : Window
 
     private CheckBox[] AllChecks() => new[]
     {
-        chkRename, chkStrings, chkConstants, chkProxy, chkFlatten, chkFlow,
+        chkRename, chkStrings, chkConstants, chkMutate, chkEncode, chkProxy, chkFlatten, chkFlow,
         chkAntiDebug, chkAntiTamper, chkAntiDecompiler, chkBomb
     };
 
@@ -95,6 +95,8 @@ public partial class MainWindow : Window
             Rename = chkRename.IsChecked == true,
             EncryptStrings = chkStrings.IsChecked == true,
             EncryptConstants = chkConstants.IsChecked == true,
+            Mutate = chkMutate.IsChecked == true,
+            EncodeLocals = chkEncode.IsChecked == true,
             ProxyCalls = chkProxy.IsChecked == true,
             Flatten = chkFlatten.IsChecked == true,
             ControlFlow = chkFlow.IsChecked == true,

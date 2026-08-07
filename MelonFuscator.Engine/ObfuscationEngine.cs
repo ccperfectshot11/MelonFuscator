@@ -18,6 +18,8 @@ public sealed class ObfuscationEngine
     private static IReadOnlyList<IProtection> BuildPipeline() => new IProtection[]
     {
         new StringEncryptionProtection(),
+        new MutationProtection(),
+        new DataEncryptionProtection(),
         new ConstantsProtection(),
         new ProxyCallProtection(),
         new FlattenProtection(),

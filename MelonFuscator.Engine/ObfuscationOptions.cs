@@ -31,6 +31,8 @@ public sealed class ObfuscationOptions
     public bool Rename { get; set; } = true;
     public bool EncryptStrings { get; set; } = true;
     public bool EncryptConstants { get; set; } = true;  // numeric ldc.i4 constants
+    public bool Mutate { get; set; } = true;             // Mixed Boolean-Arithmetic rewriting
+    public bool EncodeLocals { get; set; } = true;       // keep int locals XOR-encoded in memory
     public bool ProxyCalls { get; set; } = true;
     public bool ControlFlow { get; set; } = true;   // opaque predicates
     public bool Flatten { get; set; } = true;        // switch-dispatcher control-flow flattening
@@ -61,6 +63,8 @@ public sealed class ObfuscationOptions
                 o.Rename = true;
                 o.EncryptStrings = true;
                 o.EncryptConstants = false;
+                o.Mutate = false;
+                o.EncodeLocals = false;
                 o.ProxyCalls = false;
                 o.ControlFlow = false;
                 o.Flatten = false;
@@ -72,6 +76,8 @@ public sealed class ObfuscationOptions
             case ObfuscationPreset.Melon:
                 o.Rename = true;
                 o.EncryptStrings = true;
+                o.Mutate = true;
+                o.EncodeLocals = true;
                 o.ProxyCalls = true;
                 o.ControlFlow = true;
                 o.Flatten = false;         // flattening is powerful but heavier; opt in via max/--flatten
@@ -83,6 +89,8 @@ public sealed class ObfuscationOptions
             case ObfuscationPreset.Max:
                 o.Rename = true;
                 o.EncryptStrings = true;
+                o.Mutate = true;
+                o.EncodeLocals = true;
                 o.ProxyCalls = true;
                 o.ControlFlow = true;
                 o.Flatten = true;
