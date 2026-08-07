@@ -11,6 +11,28 @@ namespace MelonFuscator.Engine;
 /// </summary>
 public static class CilHelpers
 {
+    /// <summary>
+    /// True for the nested types the C# compiler emits for iterators (`&lt;Method&gt;d__N`
+    /// implementing IEnumerator) and async methods (implementing IAsyncStateMachine). Their MoveNext
+    /// resumes by switching on this.&lt;&gt;1__state into the middle of the method, an implicit protocol
+    /// that structural rewrites (flattening, opaque predicates, constant/arithmetic/local encoding,
+    /// call proxying) cannot see - touching them yields IL that verifies but throws
+    /// InvalidProgramException the moment the JIT runs it. Every body-rewriting protection skips these.
+    /// Detected by interface, not name, so it survives renaming and holds whatever the type is called.
+    /// </summary>
+    public static bool IsCompilerStateMachine(TypeDefinition type)
+    {
+        foreach (var impl in type.Interfaces)
+        {
+            var n = impl.Interface?.Name?.Value;
+            var ns = impl.Interface?.Namespace?.Value;
+            if (ns == "System.Runtime.CompilerServices" && n == "IAsyncStateMachine") return true;
+            if (ns == "System.Collections" && n == "IEnumerator") return true;
+            if (ns == "System.Collections.Generic" && n == "IEnumerator`1") return true;
+        }
+        return false;
+    }
+
     public static ITypeDefOrRef StringType(ModuleDefinition m) => m.CorLibTypeFactory.String.ToTypeDefOrRef();
     public static ITypeDefOrRef ObjectType(ModuleDefinition m) => m.CorLibTypeFactory.Object.ToTypeDefOrRef();
     public static ITypeDefOrRef CharType(ModuleDefinition m) => m.CorLibTypeFactory.Char.ToTypeDefOrRef();

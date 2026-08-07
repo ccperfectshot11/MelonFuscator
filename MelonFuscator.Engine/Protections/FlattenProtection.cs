@@ -42,6 +42,14 @@ public sealed class FlattenProtection : IProtection
 
         foreach (var type in ctx.Module.GetAllTypes())
         {
+            // Compiler-generated iterator/async state machines must never be flattened. Their
+            // MoveNext resumes by switching on this.<>1__state into the middle of the method;
+            // reordering its blocks breaks that contract and yields IL that passes the verifier
+            // but throws InvalidProgramException the moment the JIT runs it. (The "can never
+            // corrupt a method" claim above holds only for ordinary control flow - a state
+            // machine's flow is an implicit protocol the flattener cannot see.)
+            if (CilHelpers.IsCompilerStateMachine(type)) { skipped += type.Methods.Count; Skip("state-machine"); continue; }
+
             foreach (var method in type.Methods)
             {
                 var body = method.CilMethodBody;

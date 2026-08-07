@@ -26,6 +26,10 @@ public sealed class DataEncryptionProtection : IProtection
         int encodedLocals = 0, touchedMethods = 0;
         foreach (var type in ctx.Module.GetAllTypes())
         {
+            // Skip compiler-generated iterator/async state machines: XOR-encoding the locals their
+            // MoveNext relies on for resume corrupts the state protocol (InvalidProgramException).
+            if (CilHelpers.IsCompilerStateMachine(type)) continue;
+
             foreach (var method in type.Methods)
             {
                 var body = method.CilMethodBody;

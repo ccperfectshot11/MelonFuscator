@@ -27,7 +27,10 @@ public sealed class MutationProtection : IProtection
     public void Execute(ObfuscationContext ctx)
     {
         var module = ctx.Module;
+        // Skip compiler-generated iterator/async state machines: rewriting the integer arithmetic
+        // in their MoveNext (which includes the state math) as MBA can break resume dispatch.
         var methods = module.GetAllTypes()
+            .Where(t => !CilHelpers.IsCompilerStateMachine(t))
             .SelectMany(t => t.Methods)
             .Where(m => m.CilMethodBody is { } b && b.Instructions.Count > 0)
             .ToList();

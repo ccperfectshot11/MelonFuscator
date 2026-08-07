@@ -24,7 +24,10 @@ public sealed class ProxyCallProtection : IProtection
         var cache = new Dictionary<string, MethodDefinition>(StringComparer.Ordinal);
 
         // Snapshot bodies BEFORE adding proxies so we never reprocess generated methods.
+        // Skip compiler-generated iterator/async state machines: rerouting the calls inside their
+        // MoveNext through calli proxies can corrupt the resume dispatch (InvalidProgramException).
         var methods = module.GetAllTypes()
+            .Where(t => !CilHelpers.IsCompilerStateMachine(t))
             .SelectMany(t => t.Methods)
             .Where(m => m.CilMethodBody != null)
             .ToList();

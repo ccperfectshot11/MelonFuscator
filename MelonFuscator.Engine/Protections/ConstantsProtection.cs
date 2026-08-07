@@ -24,8 +24,11 @@ public sealed class ConstantsProtection : IProtection
         var holder = CilHelpers.CreateStaticHolder(module, ctx.Names.Next());
         var decode = EmitDecodeI4(module, holder, ctx.Cipher);
 
-        // Snapshot bodies before adding the decoder so we never rewrite it.
+        // Snapshot bodies before adding the decoder so we never rewrite it. Compiler-generated
+        // iterator/async state machines are skipped: rewriting their state constants into decode
+        // calls corrupts the resume dispatch (InvalidProgramException at runtime).
         var methods = module.GetAllTypes()
+            .Where(t => !CilHelpers.IsCompilerStateMachine(t))
             .SelectMany(t => t.Methods)
             .Where(m => m.CilMethodBody != null && m != decode)
             .ToList();

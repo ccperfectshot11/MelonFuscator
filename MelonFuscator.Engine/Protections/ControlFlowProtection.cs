@@ -42,7 +42,10 @@ public sealed class ControlFlowProtection : IProtection
 
         SeedFields(module, holder, fields, ctx);
 
+        // Compiler-generated iterator/async state machines are skipped: inserting opaque-predicate
+        // branches into their MoveNext corrupts the resume dispatch (InvalidProgramException).
         var methods = module.GetAllTypes()
+            .Where(t => !CilHelpers.IsCompilerStateMachine(t))
             .SelectMany(t => t.Methods)
             .Where(m => m.CilMethodBody is { } b && b.Instructions.Count > 0)
             .ToList();
